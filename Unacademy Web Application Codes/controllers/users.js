@@ -1,13 +1,14 @@
-const mysql = require("mysql");
+const mysql = require("mysql2");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { promisify } = require("util");
 
 const db = mysql.createConnection({
-  host: process.env.DATABASE_HOST,
-  user: process.env.DATABASE_USER,
-  password: process.env.DATABASE_PASS,
-  database: process.env.DATABASE,
+  host: 'localhost',     
+  port: 3306,            // default port for mysql is 3306
+  database: 'world',      // database from which we want to connect our node application
+  user: 'root',          // username of the mysql connection
+  password: 'root'       // password of the mysql connection
 });
 
 exports.login = async (req, res) => {
@@ -31,21 +32,27 @@ exports.login = async (req, res) => {
             msg_type: "error",
           });
         } else {
-          if (!(await bcrypt.compare(password, result[0].PASS))) {
+          if (!(await bcrypt.compare(password, result[0].pass))) {
             return res.status(401).render("login", {
               msg: "Please Enter Your Email and Password",
               msg_type: "error",
             });
           } else {
-            const id = result[0].ID;
-            const token = jwt.sign({ id: id }, process.env.JWT_SECRET, {
-              expiresIn: process.env.JWT_EXPIRES_IN,
-            });
+            const id = result[0].id;
+            const token = jwt.sign(
+              { id: id }, // Payload
+              '875e7e47ccace437a80a82fa10a6028c65971f2548496a119c1b27fc837f4a7b', // Secret key
+              {
+                expiresIn: '12h', // Valid string format
+              }
+            );
+            
+            console.log(token);
             console.log("The Token is " + token);
             const cookieOptions = {
               expires: new Date(
                 Date.now() +
-                  process.env.JWT_COOKIE_EXPIRES * 24 * 60 * 60 * 1000
+                  1 * 24 * 60 * 60 * 1000
               ),
               httpOnly: true,
             };
@@ -76,9 +83,9 @@ exports.register = (req, res) => {
     [email],
     async (error, result) => {
       if (error) {
-        confirm.log(error);
+        console.log(error);
       }
-
+console.log(result)
       if (result.length > 0) {
         return res.render("register", {
           msg: "Email id already Taken",
